@@ -1,128 +1,109 @@
-import {
-  type FormEvent,
-  useState
-} from "react";
+import {type FormEvent, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
-import {
-  Link,
-  useNavigate
-} from "react-router-dom";
-
+import Input from "../components/Input";
+import Button from "../components/Button";
 import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
-  const {
-    login
-  } = useAuth();
+  const { login } = useAuth();
 
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const [email, setEmail] =
-    useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-  const [password, setPassword] =
-    useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const [error, setError] =
-    useState("");
+  const from =
+    (location.state as { from?: string } | null)?.from ||
+    "/dashboard";
 
-  const [loading, setLoading] =
-    useState(false);
-
-  async function handleSubmit(
-    event: FormEvent
-  ) {
+  const handleSubmit = async (
+    event: FormEvent<HTMLFormElement>
+  ) => {
     event.preventDefault();
 
     setError("");
     setLoading(true);
 
     try {
-      await login(
-        email,
-        password
-      );
-
-      navigate("/dashboard");
-    } catch (error: any) {
+      await login(email, password);
+      navigate(from, { replace: true });
+    } catch (error) {
       setError(
-        error?.response?.data?.message ||
-        "Unable to login"
+        error instanceof Error
+          ? error.message
+          : "Invalid email or password"
       );
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
       <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-sm">
-        <h1 className="text-2xl font-bold">
-          Welcome back
-        </h1>
+        <div className="mb-8 text-center">
+          <h1 className="text-2xl font-bold text-slate-900">
+            Welcome back
+          </h1>
 
-        <p className="mt-2 text-sm text-slate-500">
-          Sign in to your NexManage account.
-        </p>
+          <p className="mt-2 text-sm text-slate-500">
+            Sign in to your NexManage account
+          </p>
+        </div>
 
         {error && (
-          <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">
+          <div className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
           </div>
         )}
 
         <form
           onSubmit={handleSubmit}
-          className="mt-6 space-y-4"
+          className="space-y-5"
         >
-          <div>
-            <label className="mb-1 block text-sm font-medium">
-              Email
-            </label>
+          <Input
+            id="email"
+            label="Email"
+            type="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            required
+            autoComplete="email"
+          />
 
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) =>
-                setEmail(e.target.value)
-              }
-              className="w-full rounded-lg border px-3 py-2 outline-none focus:ring-2 focus:ring-slate-300"
-            />
-          </div>
+          <Input
+            id="password"
+            label="Password"
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(event) =>
+              setPassword(event.target.value)
+            }
+            required
+            autoComplete="current-password"
+          />
 
-          <div>
-            <label className="mb-1 block text-sm font-medium">
-              Password
-            </label>
-
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) =>
-                setPassword(e.target.value)
-              }
-              className="w-full rounded-lg border px-3 py-2 outline-none focus:ring-2 focus:ring-slate-300"
-            />
-          </div>
-
-          <button
+          <Button
             type="submit"
-            disabled={loading}
-            className="w-full rounded-lg bg-slate-900 px-4 py-2.5 font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+            loading={loading}
+            className="w-full"
           >
-            {loading
-              ? "Signing in..."
-              : "Sign in"}
-          </button>
+            Sign In
+          </Button>
         </form>
 
         <p className="mt-6 text-center text-sm text-slate-500">
           Don't have an account?{" "}
           <Link
             to="/signup"
-            className="font-medium text-slate-900"
+            className="font-medium text-slate-900 hover:underline"
           >
             Create one
           </Link>
