@@ -8,30 +8,20 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 
+import Clients from "./pages/Clients";
+import ClientForm from "./pages/ClientForm";
+
+import Projects from "./pages/Projects";
+import ProjectForm from "./pages/ProjectForm";
+import ProjectDetails from "./pages/ProjectDetails";
+
 import ProtectedRoute from "./components/ProtectedRoute";
 import DashboardLayout from "./layouts/DashboardLayout";
-
-function Placeholder({
-  title,
-}: {
-  title: string;
-}) {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white p-10 text-center shadow-sm">
-      <h1 className="text-2xl font-bold text-slate-900">
-        {title}
-      </h1>
-
-      <p className="mt-2 text-slate-500">
-        This section will be implemented in the next phase.
-      </p>
-    </div>
-  );
-}
 
 export default function App() {
   return (
     <Routes>
+      {/* Public routes */}
       <Route
         path="/login"
         element={<Login />}
@@ -42,52 +32,54 @@ export default function App() {
         element={<Signup />}
       />
 
+      {/* Protected routes */}
       <Route element={<ProtectedRoute />}>
-        <Route
-          element={<DashboardLayout />}
-        >
+        <Route element={<DashboardLayout />}>
           <Route
             path="/dashboard"
             element={<Dashboard />}
           />
 
-          <Route
-            path="/projects"
-            element={
-              <Placeholder title="Projects" />
-            }
-          />
-
-          <Route
-            path="/projects/new"
-            element={
-              <Placeholder title="Create Project" />
-            }
-          />
-
-          <Route
-            path="/projects/:id"
-            element={
-              <Placeholder title="Project Details" />
-            }
-          />
-
+          {/* Clients */}
           <Route
             path="/clients"
-            element={
-              <Placeholder title="Clients" />
-            }
+            element={<Clients />}
           />
 
           <Route
             path="/clients/new"
-            element={
-              <Placeholder title="Create Client" />
-            }
+            element={<ClientForm />}
+          />
+
+          <Route
+            path="/clients/:id/edit"
+            element={<ClientForm />}
+          />
+
+          {/* Projects */}
+          <Route
+            path="/projects"
+            element={<Projects />}
+          />
+
+          <Route
+            path="/projects/new"
+            element={<ProjectForm />}
+          />
+
+          <Route
+            path="/projects/:id"
+            element={<ProjectDetails />}
+          />
+
+          <Route
+            path="/projects/:id/edit"
+            element={<ProjectForm />}
           />
         </Route>
       </Route>
 
+      {/* Default */}
       <Route
         path="/"
         element={
@@ -98,6 +90,7 @@ export default function App() {
         }
       />
 
+      {/* 404 */}
       <Route
         path="*"
         element={
