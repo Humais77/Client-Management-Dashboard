@@ -15,13 +15,14 @@ import Projects from "./pages/Projects";
 import ProjectForm from "./pages/ProjectForm";
 import ProjectDetails from "./pages/ProjectDetails";
 
+import NotFound from "./pages/NotFound";
+
 import ProtectedRoute from "./components/ProtectedRoute";
 import DashboardLayout from "./layouts/DashboardLayout";
 
 export default function App() {
   return (
     <Routes>
-      {/* Public routes */}
       <Route
         path="/login"
         element={<Login />}
@@ -32,7 +33,6 @@ export default function App() {
         element={<Signup />}
       />
 
-      {/* Protected routes */}
       <Route element={<ProtectedRoute />}>
         <Route element={<DashboardLayout />}>
           <Route
@@ -40,7 +40,6 @@ export default function App() {
             element={<Dashboard />}
           />
 
-          {/* Clients */}
           <Route
             path="/clients"
             element={<Clients />}
@@ -56,7 +55,6 @@ export default function App() {
             element={<ClientForm />}
           />
 
-          {/* Projects */}
           <Route
             path="/projects"
             element={<Projects />}
@@ -79,7 +77,6 @@ export default function App() {
         </Route>
       </Route>
 
-      {/* Default */}
       <Route
         path="/"
         element={
@@ -90,15 +87,9 @@ export default function App() {
         }
       />
 
-      {/* 404 */}
       <Route
         path="*"
-        element={
-          <Navigate
-            to="/dashboard"
-            replace
-          />
-        }
+        element={<NotFound />}
       />
     </Routes>
   );
