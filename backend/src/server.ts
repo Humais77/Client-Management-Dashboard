@@ -1,7 +1,15 @@
 import "dotenv/config";
 
+import dns from "node:dns";
+
 import app from "./app";
 import { connectDatabase } from "./config/db";
+
+// Use public DNS servers for MongoDB Atlas SRV resolution.
+dns.setServers([
+  "1.1.1.1",
+  "8.8.8.8",
+]);
 
 const PORT = Number(
   process.env.PORT || 5000

@@ -10,15 +10,23 @@ import projectRoutes from "./routes/project.routes";
 import { errorHandler } from "./middleware/error.middleware";
 import { requireAuth } from "./middleware/auth.middleware";
 const app = express();
-
+const frontendUrl =
+  process.env.FRONTEND_URL;
 app.use(
   helmet()
 );
 
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL,
-    credentials: true
+    origin: frontendUrl,
+    credentials: true,
+    methods: [
+      "GET",
+      "POST",
+      "PUT",
+      "DELETE",
+      "OPTIONS",
+    ],
   })
 );
 
@@ -36,6 +44,17 @@ const apiLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false
 });
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message:
+      "Too many authentication attempts. Please try again later.",
+  },
+});
 
 app.use("/api", apiLimiter);
 
@@ -48,6 +67,7 @@ app.get("/api/health", (_req, res) => {
 
 app.use(
   "/api/auth",
+  authLimiter,
   authRoutes
 );
 
