@@ -1,4 +1,7 @@
-export type ProjectStatus = "Pending" | "In Progress" | "Completed";
+export type ProjectStatus =
+  | "Pending"
+  | "In Progress"
+  | "Completed";
 
 export interface User {
   id: string;
@@ -27,8 +30,15 @@ export interface Project {
   updatedAt: string;
 }
 
-export interface ApiResponse<T> {
-  success: boolean;
-  message?: string;
-  data?: T;
+export interface ProjectFormData {
+  name: string;
+  description: string;
+  client: string;
+  status: ProjectStatus;
+}
+
+export interface ClientFormData {
+  name: string;
+  email: string;
+  company: string;
 }
