@@ -1,5 +1,14 @@
 import { useState } from "react";
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+
+import {
+  Link,
+  Outlet,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
+
+import toast from "react-hot-toast";
+
 import { useAuth } from "../context/AuthContext";
 
 export default function DashboardLayout() {
@@ -8,12 +17,11 @@ export default function DashboardLayout() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] =
+    useState(false);
 
-  const handleLogout = async () => {
-    await logout();
-    navigate("/login");
-  };
+  const [loggingOut, setLoggingOut] =
+    useState(false);
 
   const navigation = [
     {
@@ -38,6 +46,24 @@ export default function DashboardLayout() {
     return location.pathname.startsWith(path);
   };
 
+  const handleLogout = async () => {
+    setLoggingOut(true);
+
+    try {
+      await logout();
+
+      toast.success("Logged out successfully");
+
+      navigate("/login", {
+        replace: true,
+      });
+    } catch {
+      toast.error("Unable to logout");
+    } finally {
+      setLoggingOut(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="border-b border-slate-200 bg-white">
@@ -49,7 +75,7 @@ export default function DashboardLayout() {
             NexManage
           </Link>
 
-          <nav className="hidden items-center gap-2 md:flex">
+          <nav className="hidden items-center gap-1 md:flex">
             {navigation.map((item) => (
               <Link
                 key={item.path}
@@ -77,30 +103,52 @@ export default function DashboardLayout() {
             </div>
 
             <button
+              type="button"
               onClick={handleLogout}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+              disabled={loggingOut}
+              className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Logout
+              {loggingOut
+                ? "Logging out..."
+                : "Logout"}
             </button>
           </div>
 
           <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            type="button"
+            onClick={() =>
+              setMobileMenuOpen(
+                (current) => !current
+              )
+            }
             className="rounded-lg border border-slate-300 px-3 py-2 text-sm md:hidden"
             aria-label="Toggle navigation"
+            aria-expanded={mobileMenuOpen}
           >
-            ☰
+            {mobileMenuOpen ? "×" : "☰"}
           </button>
         </div>
 
         {mobileMenuOpen && (
           <div className="border-t border-slate-200 px-4 py-4 md:hidden">
+            <div className="mb-4 border-b border-slate-100 pb-4">
+              <p className="font-medium text-slate-900">
+                {user?.name}
+              </p>
+
+              <p className="mt-1 text-xs text-slate-500">
+                {user?.email}
+              </p>
+            </div>
+
             <nav className="space-y-2">
               {navigation.map((item) => (
                 <Link
                   key={item.path}
                   to={item.path}
-                  onClick={() => setMobileMenuOpen(false)}
+                  onClick={() =>
+                    setMobileMenuOpen(false)
+                  }
                   className={`block rounded-lg px-4 py-3 text-sm font-medium ${
                     isActive(item.path)
                       ? "bg-slate-900 text-white"
@@ -112,10 +160,14 @@ export default function DashboardLayout() {
               ))}
 
               <button
+                type="button"
                 onClick={handleLogout}
-                className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-left text-sm font-medium text-slate-700"
+                disabled={loggingOut}
+                className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-left text-sm font-medium text-slate-700 disabled:opacity-50"
               >
-                Logout
+                {loggingOut
+                  ? "Logging out..."
+                  : "Logout"}
               </button>
             </nav>
           </div>

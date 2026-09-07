@@ -5,7 +5,8 @@ import { Link } from "react-router-dom";
 import Button from "../components/Button";
 import ProjectCard from "../components/ProjectCard";
 import Modal from "../components/Modal";
-
+import toast from "react-hot-toast";
+import { getApiErrorMessage } from "../utils/apiError";
 import api from "../services/api";
 
 import type {
@@ -93,43 +94,49 @@ export default function Projects() {
   }, [search, status]);
 
   const handleDelete = async () => {
-    if (!projectToDelete) {
-      return;
+  if (!projectToDelete) {
+    return;
+  }
+
+  setDeleting(true);
+
+  try {
+    const response = await api.delete(
+      `/projects/${projectToDelete._id}`
+    );
+
+    if (!response.data.success) {
+      throw new Error(
+        response.data.message ||
+          "Unable to delete project"
+      );
     }
 
-    setDeleting(true);
+    setProjects((current) =>
+      current.filter(
+        (project) =>
+          project._id !==
+          projectToDelete._id
+      )
+    );
 
-    try {
-      const response = await api.delete(
-        `/projects/${projectToDelete._id}`
-      );
+    setProjectToDelete(null);
 
-      if (!response.data.success) {
-        throw new Error(
-          response.data.message ||
-            "Unable to delete project"
-        );
-      }
+    toast.success(
+      "Project deleted successfully"
+    );
+  } catch (error) {
+    const message = getApiErrorMessage(
+      error,
+      "Unable to delete project"
+    );
 
-      setProjects((current) =>
-        current.filter(
-          (project) =>
-            project._id !==
-            projectToDelete._id
-        )
-      );
-
-      setProjectToDelete(null);
-    } catch (error) {
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Unable to delete project"
-      );
-    } finally {
-      setDeleting(false);
-    }
-  };
+    setError(message);
+    toast.error(message);
+  } finally {
+    setDeleting(false);
+  }
+};
 
   const clearFilters = () => {
     setSearch("");

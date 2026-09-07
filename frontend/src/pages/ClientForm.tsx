@@ -9,7 +9,8 @@ import {
   useNavigate,
   useParams,
 } from "react-router-dom";
-
+import toast from "react-hot-toast";
+import { getApiErrorMessage } from "../utils/apiError";
 import Input from "../components/Input";
 import Button from "../components/Button";
 import api from "../services/api";
@@ -69,39 +70,45 @@ export default function ClientForm() {
   }, [id]);
 
   const handleSubmit = async (
-    event: FormEvent<HTMLFormElement>
-  ) => {
-    event.preventDefault();
+  event: FormEvent<HTMLFormElement>
+) => {
+  event.preventDefault();
 
-    setError("");
-    setSaving(true);
+  setError("");
+  setSaving(true);
 
-    try {
-      if (isEditing) {
-        await api.put(`/clients/${id}`, {
-          name,
-          email,
-          company,
-        });
-      } else {
-        await api.post("/clients", {
-          name,
-          email,
-          company,
-        });
-      }
+  try {
+    if (isEditing) {
+      await api.put(`/clients/${id}`, {
+        name,
+        email,
+        company,
+      });
 
-      navigate("/clients");
-    } catch (error) {
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Unable to save client"
-      );
-    } finally {
-      setSaving(false);
+      toast.success("Client updated successfully");
+    } else {
+      await api.post("/clients", {
+        name,
+        email,
+        company,
+      });
+
+      toast.success("Client created successfully");
     }
-  };
+
+    navigate("/clients");
+  } catch (error) {
+    const message = getApiErrorMessage(
+      error,
+      "Unable to save client"
+    );
+
+    setError(message);
+    toast.error(message);
+  } finally {
+    setSaving(false);
+  }
+};
 
   if (loading) {
     return (

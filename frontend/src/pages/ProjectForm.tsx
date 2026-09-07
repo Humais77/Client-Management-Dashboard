@@ -9,7 +9,8 @@ import {
   useNavigate,
   useParams,
 } from "react-router-dom";
-
+import toast from "react-hot-toast";
+import { getApiErrorMessage } from "../utils/apiError";
 import Input from "../components/Input";
 import Select from "../components/Select";
 import Button from "../components/Button";
@@ -103,50 +104,82 @@ export default function ProjectForm() {
   }, [id]);
 
   const handleSubmit = async (
-    event: FormEvent<HTMLFormElement>
-  ) => {
-    event.preventDefault();
+  event: FormEvent<HTMLFormElement>
+) => {
+  event.preventDefault();
 
-    setError("");
+  setError("");
 
-    if (!client) {
-      setError("Please select a client.");
-      return;
-    }
+  if (!name.trim()) {
+    const message =
+      "Project name is required.";
 
-    setSaving(true);
+    setError(message);
+    toast.error(message);
+    return;
+  }
 
-    try {
-      const payload = {
-        name,
-        description,
-        client,
-        status,
-      };
+  if (!description.trim()) {
+    const message =
+      "Project description is required.";
 
-      if (isEditing) {
-        await api.put(
-          `/projects/${id}`,
-          payload
-        );
-      } else {
-        await api.post(
-          "/projects",
-          payload
-        );
-      }
+    setError(message);
+    toast.error(message);
+    return;
+  }
 
-      navigate("/projects");
-    } catch (error) {
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Unable to save project"
+  if (!client) {
+    const message =
+      "Please select a client.";
+
+    setError(message);
+    toast.error(message);
+    return;
+  }
+
+  setSaving(true);
+
+  try {
+    const payload = {
+      name: name.trim(),
+      description: description.trim(),
+      client,
+      status,
+    };
+
+    if (isEditing) {
+      await api.put(
+        `/projects/${id}`,
+        payload
       );
-    } finally {
-      setSaving(false);
+
+      toast.success(
+        "Project updated successfully"
+      );
+    } else {
+      await api.post(
+        "/projects",
+        payload
+      );
+
+      toast.success(
+        "Project created successfully"
+      );
     }
-  };
+
+    navigate("/projects");
+  } catch (error) {
+    const message = getApiErrorMessage(
+      error,
+      "Unable to save project"
+    );
+
+    setError(message);
+    toast.error(message);
+  } finally {
+    setSaving(false);
+  }
+};
 
   if (loading) {
     return (

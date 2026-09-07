@@ -4,7 +4,8 @@ import { Link, useNavigate } from "react-router-dom";
 import Input from "../components/Input";
 import Button from "../components/Button";
 import { useAuth } from "../context/AuthContext";
-
+import toast from "react-hot-toast";
+import { getApiErrorMessage } from "../utils/apiError";
 export default function Signup() {
   const { signup } = useAuth();
   const navigate = useNavigate();
@@ -19,39 +20,67 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (
-    event: FormEvent<HTMLFormElement>
-  ) => {
-    event.preventDefault();
+  event: FormEvent<HTMLFormElement>
+) => {
+  event.preventDefault();
 
-    setError("");
+  setError("");
 
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
+  if (name.trim().length < 2) {
+    const message =
+      "Name must contain at least 2 characters.";
 
-    if (password.length < 8) {
-      setError(
-        "Password must contain at least 8 characters."
-      );
-      return;
-    }
+    setError(message);
+    toast.error(message);
+    return;
+  }
 
-    setLoading(true);
+  if (password !== confirmPassword) {
+    const message =
+      "Passwords do not match.";
 
-    try {
-      await signup(name, email, password);
-      navigate("/dashboard", { replace: true });
-    } catch (error) {
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Unable to create account"
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+    setError(message);
+    toast.error(message);
+    return;
+  }
+
+  if (password.length < 8) {
+    const message =
+      "Password must contain at least 8 characters.";
+
+    setError(message);
+    toast.error(message);
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    await signup(
+      name.trim(),
+      email.trim(),
+      password
+    );
+
+    toast.success(
+      "Account created successfully!"
+    );
+
+    navigate("/dashboard", {
+      replace: true,
+    });
+  } catch (error) {
+    const message = getApiErrorMessage(
+      error,
+      "Unable to create account"
+    );
+
+    setError(message);
+    toast.error(message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-8">

@@ -5,7 +5,8 @@ import { Link } from "react-router-dom";
 import Button from "../components/Button";
 import Modal from "../components/Modal";
 import api from "../services/api";
-
+import toast from "react-hot-toast";
+import { getApiErrorMessage } from "../utils/apiError";
 import type { Client } from "../types";
 
 export default function Clients() {
@@ -48,42 +49,46 @@ export default function Clients() {
   }, []);
 
   const handleDelete = async () => {
-    if (!clientToDelete) {
-      return;
+  if (!clientToDelete) {
+    return;
+  }
+
+  setDeleting(true);
+
+  try {
+    const response = await api.delete(
+      `/clients/${clientToDelete._id}`
+    );
+
+    if (!response.data.success) {
+      throw new Error(
+        response.data.message ||
+          "Unable to delete client"
+      );
     }
 
-    setDeleting(true);
+    setClients((current) =>
+      current.filter(
+        (client) =>
+          client._id !== clientToDelete._id
+      )
+    );
 
-    try {
-      const response = await api.delete(
-        `/clients/${clientToDelete._id}`
-      );
+    setClientToDelete(null);
 
-      if (!response.data.success) {
-        throw new Error(
-          response.data.message ||
-            "Unable to delete client"
-        );
-      }
+    toast.success("Client deleted successfully");
+  } catch (error) {
+    const message = getApiErrorMessage(
+      error,
+      "Unable to delete client"
+    );
 
-      setClients((current) =>
-        current.filter(
-          (client) =>
-            client._id !== clientToDelete._id
-        )
-      );
-
-      setClientToDelete(null);
-    } catch (error) {
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Unable to delete client"
-      );
-    } finally {
-      setDeleting(false);
-    }
-  };
+    setError(message);
+    toast.error(message);
+  } finally {
+    setDeleting(false);
+  }
+};
 
   return (
     <div className="space-y-8">
