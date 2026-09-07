@@ -3,19 +3,17 @@ import {
   useContext,
   useEffect,
   useState,
-  type ReactNode
+  type ReactNode,
 } from "react";
 
-import { api } from "../services/api";
-import { type User } from "../types";
+import api from "../services/api";
+import type { User } from "../types";
 
-interface AuthContextValue {
+interface AuthContextType {
   user: User | null;
-  loading: boolean;
-  login: (
-    email: string,
-    password: string
-  ) => Promise<void>;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  login: (email: string, password: string) => Promise<void>;
   signup: (
     name: string,
     email: string,
@@ -24,80 +22,84 @@ interface AuthContextValue {
   logout: () => Promise<void>;
 }
 
-const AuthContext =
-  createContext<AuthContextValue | null>(null);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({
-  children
-}: {
+interface AuthProviderProps {
   children: ReactNode;
-}) {
-  const [user, setUser] =
-    useState<User | null>(null);
+}
 
-  const [loading, setLoading] =
-    useState(true);
+export function AuthProvider({ children }: AuthProviderProps) {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchCurrentUser = async () => {
+    try {
+      const response = await api.get("/auth/me");
+
+      if (response.data.success) {
+        setUser(response.data.user);
+      } else {
+        setUser(null);
+      }
+    } catch {
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    api
-      .get("/auth/me")
-      .then((response) => {
-        setUser(response.data.user);
-      })
-      .catch(() => {
-        setUser(null);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+    fetchCurrentUser();
   }, []);
 
-  async function login(
-    email: string,
-    password: string
-  ) {
-    const response = await api.post(
-      "/auth/login",
-      {
-        email,
-        password
-      }
-    );
+  const login = async (email: string, password: string) => {
+    const response = await api.post("/auth/login", {
+      email,
+      password,
+    });
+
+    if (!response.data.success) {
+      throw new Error(response.data.message || "Login failed");
+    }
 
     setUser(response.data.user);
-  }
+  };
 
-  async function signup(
+  const signup = async (
     name: string,
     email: string,
     password: string
-  ) {
-    const response = await api.post(
-      "/auth/signup",
-      {
-        name,
-        email,
-        password
-      }
-    );
+  ) => {
+    const response = await api.post("/auth/signup", {
+      name,
+      email,
+      password,
+    });
+
+    if (!response.data.success) {
+      throw new Error(response.data.message || "Signup failed");
+    }
 
     setUser(response.data.user);
-  }
+  };
 
-  async function logout() {
-    await api.post("/auth/logout");
-
-    setUser(null);
-  }
+  const logout = async () => {
+    try {
+      await api.post("/auth/logout");
+    } finally {
+      setUser(null);
+    }
+  };
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        loading,
+        isLoading,
+        isAuthenticated: Boolean(user),
         login,
         signup,
-        logout
+        logout,
       }}
     >
       {children}
@@ -106,13 +108,10 @@ export function AuthProvider({
 }
 
 export function useAuth() {
-  const context =
-    useContext(AuthContext);
+  const context = useContext(AuthContext);
 
   if (!context) {
-    throw new Error(
-      "useAuth must be used inside AuthProvider"
-    );
+    throw new Error("useAuth must be used inside AuthProvider");
   }
 
   return context;
