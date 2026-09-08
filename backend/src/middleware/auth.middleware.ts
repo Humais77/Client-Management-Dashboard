@@ -1,11 +1,12 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyToken } from "../utils/jwt";
+import { User } from "../models/User";
 
-export function requireAuth(
+export async function requireAuth(
   req: Request,
   res: Response,
   next: NextFunction
-): void {
+): Promise<void> {
   const token = req.cookies?.token;
 
   if (!token) {
@@ -23,6 +24,21 @@ export function requireAuth(
     res.status(401).json({
       success: false,
       message: "Invalid or expired session"
+    });
+
+    return;
+  }
+
+  const user = await User.exists({
+    _id: payload.userId
+  });
+
+  if (!user) {
+    res.clearCookie("token");
+
+    res.status(401).json({
+      success: false,
+      message: "User session is no longer valid"
     });
 
     return;

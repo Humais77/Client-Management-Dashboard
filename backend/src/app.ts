@@ -3,13 +3,16 @@ import cors from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
-
+import { csrfProtection } from "./middleware/csrf.middleware";
 import authRoutes from "./routes/auth.routes";
 import clientRoutes from "./routes/client.routes";
 import projectRoutes from "./routes/project.routes";
 import { errorHandler } from "./middleware/error.middleware";
 import { requireAuth } from "./middleware/auth.middleware";
 const app = express();
+if (process.env.NODE_ENV === "production") {
+  app.set("trust proxy", 1);
+}
 const frontendUrl =
   process.env.FRONTEND_URL;
 app.use(
@@ -37,7 +40,7 @@ app.use(
 );
 
 app.use(cookieParser());
-
+app.use(csrfProtection);
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 200,

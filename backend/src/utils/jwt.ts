@@ -1,4 +1,6 @@
-import jwt from "jsonwebtoken";
+import jwt, {
+  JwtPayload as JsonWebTokenPayload
+} from "jsonwebtoken";
 
 interface JwtPayload {
   userId: string;
@@ -14,12 +16,15 @@ function getJwtSecret(): string {
   return secret;
 }
 
-export function generateToken(userId: string): string {
+export function generateToken(
+  userId: string
+): string {
   return jwt.sign(
     { userId },
     getJwtSecret(),
     {
-      expiresIn: "7d"
+      expiresIn: "7d",
+      algorithm: "HS256"
     }
   );
 }
@@ -28,10 +33,34 @@ export function verifyToken(
   token: string
 ): JwtPayload | null {
   try {
-    return jwt.verify(
+    const decoded = jwt.verify(
       token,
-      getJwtSecret()
-    ) as JwtPayload;
+      getJwtSecret(),
+      {
+        algorithms: ["HS256"]
+      }
+    );
+
+    if (
+      typeof decoded === "string" ||
+      !decoded ||
+      typeof decoded !== "object"
+    ) {
+      return null;
+    }
+
+    const payload =
+      decoded as JsonWebTokenPayload & {
+        userId?: unknown;
+      };
+
+    if (typeof payload.userId !== "string") {
+      return null;
+    }
+
+    return {
+      userId: payload.userId
+    };
   } catch {
     return null;
   }

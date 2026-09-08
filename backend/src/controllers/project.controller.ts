@@ -4,48 +4,58 @@ import { Project } from "../models/Project";
 import { Client } from "../models/Client";
 import { projectSchema } from "../schemas/project.schema";
 
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+
+
 export async function getProjects(
   req: Request,
   res: Response
 ): Promise<void> {
   const search =
-    typeof req.query.search === "string"
-      ? req.query.search.trim()
-      : "";
+  typeof req.query.search === "string"
+    ? req.query.search.trim().slice(0, 100)
+    : "";
 
   const status =
     typeof req.query.status === "string"
       ? req.query.status
       : "";
-
+  const regex = new RegExp(
+  escapeRegex(search),
+  "i"
+);
   const filter: Record<string, unknown> = {
     user: req.userId
   };
 
+
   if (search) {
     filter.$or = [
-      {
-        name: {
-          $regex: search,
-          $options: "i"
-        }
-      },
-      {
-        description: {
-          $regex: search,
-          $options: "i"
-        }
-      }
-    ];
+  {
+    name: regex
+  },
+  {
+    description: regex
+  }
+];
   }
 
   if (
-    status === "Pending" ||
-    status === "In Progress" ||
-    status === "Completed"
-  ) {
-    filter.status = status;
-  }
+  status &&
+  status !== "Pending" &&
+  status !== "In Progress" &&
+  status !== "Completed"
+) {
+  res.status(400).json({
+    success: false,
+    message: "Invalid project status"
+  });
+
+  return;
+}
 
   const projects = await Project.find(filter)
     .populate("client", "name email company")
@@ -154,6 +164,14 @@ export async function updateProject(
 
     return;
   }
+  if (!mongoose.isValidObjectId(req.params.id)) {
+  res.status(400).json({
+    success: false,
+    message: "Invalid project ID"
+  });
+
+  return;
+}
 
   const client = await Client.findOne({
     _id: parsed.data.client,
@@ -203,6 +221,14 @@ export async function deleteProject(
   req: Request,
   res: Response
 ): Promise<void> {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+  res.status(400).json({
+    success: false,
+    message: "Invalid project ID"
+  });
+
+  return;
+}
   const project =
     await Project.findOneAndDelete({
       _id: req.params.id,
