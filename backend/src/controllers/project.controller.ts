@@ -8,62 +8,70 @@ function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-
-
 export async function getProjects(
   req: Request,
   res: Response
 ): Promise<void> {
   const search =
-  typeof req.query.search === "string"
-    ? req.query.search.trim().slice(0, 100)
-    : "";
+    typeof req.query.search === "string"
+      ? req.query.search.trim().slice(0, 100)
+      : "";
 
   const status =
     typeof req.query.status === "string"
       ? req.query.status
       : "";
-  const regex = new RegExp(
-  escapeRegex(search),
-  "i"
-);
+
   const filter: Record<string, unknown> = {
-    user: req.userId
+    user: req.userId,
   };
 
-
   if (search) {
+    const regex = new RegExp(
+      escapeRegex(search),
+      "i"
+    );
+
     filter.$or = [
-  {
-    name: regex
-  },
-  {
-    description: regex
-  }
-];
+      {
+        name: regex,
+      },
+      {
+        description: regex,
+      },
+    ];
   }
 
   if (
-  status &&
-  status !== "Pending" &&
-  status !== "In Progress" &&
-  status !== "Completed"
-) {
-  res.status(400).json({
-    success: false,
-    message: "Invalid project status"
-  });
+    status &&
+    status !== "Pending" &&
+    status !== "In Progress" &&
+    status !== "Completed"
+  ) {
+    res.status(400).json({
+      success: false,
+      message: "Invalid project status",
+    });
 
-  return;
-}
+    return;
+  }
+
+  if (status) {
+    filter.status = status;
+  }
 
   const projects = await Project.find(filter)
-    .populate("client", "name email company")
-    .sort({ createdAt: -1 });
+    .populate(
+      "client",
+      "name email company"
+    )
+    .sort({
+      createdAt: -1,
+    });
 
   res.json({
     success: true,
-    projects
+    projects,
   });
 }
 
@@ -74,7 +82,7 @@ export async function getProject(
   if (!mongoose.isValidObjectId(req.params.id)) {
     res.status(400).json({
       success: false,
-      message: "Invalid project ID"
+      message: "Invalid project ID",
     });
 
     return;
@@ -82,7 +90,7 @@ export async function getProject(
 
   const project = await Project.findOne({
     _id: req.params.id,
-    user: req.userId
+    user: req.userId,
   }).populate(
     "client",
     "name email company"
@@ -91,7 +99,7 @@ export async function getProject(
   if (!project) {
     res.status(404).json({
       success: false,
-      message: "Project not found"
+      message: "Project not found",
     });
 
     return;
@@ -99,7 +107,7 @@ export async function getProject(
 
   res.json({
     success: true,
-    project
+    project,
   });
 }
 
@@ -113,7 +121,18 @@ export async function createProject(
     res.status(400).json({
       success: false,
       message: "Invalid project data",
-      errors: parsed.error.flatten()
+      errors: parsed.error.flatten(),
+    });
+
+    return;
+  }
+
+  if (
+    !mongoose.isValidObjectId(parsed.data.client)
+  ) {
+    res.status(400).json({
+      success: false,
+      message: "Invalid client ID",
     });
 
     return;
@@ -121,13 +140,13 @@ export async function createProject(
 
   const client = await Client.findOne({
     _id: parsed.data.client,
-    user: req.userId
+    user: req.userId,
   });
 
   if (!client) {
     res.status(404).json({
       success: false,
-      message: "Client not found"
+      message: "Client not found",
     });
 
     return;
@@ -135,7 +154,7 @@ export async function createProject(
 
   const project = await Project.create({
     ...parsed.data,
-    user: req.userId
+    user: req.userId,
   });
 
   await project.populate(
@@ -145,7 +164,7 @@ export async function createProject(
 
   res.status(201).json({
     success: true,
-    project
+    project,
   });
 }
 
@@ -153,35 +172,47 @@ export async function updateProject(
   req: Request,
   res: Response
 ): Promise<void> {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    res.status(400).json({
+      success: false,
+      message: "Invalid project ID",
+    });
+
+    return;
+  }
+
   const parsed = projectSchema.safeParse(req.body);
 
   if (!parsed.success) {
     res.status(400).json({
       success: false,
       message: "Invalid project data",
-      errors: parsed.error.flatten()
+      errors: parsed.error.flatten(),
     });
 
     return;
   }
-  if (!mongoose.isValidObjectId(req.params.id)) {
-  res.status(400).json({
-    success: false,
-    message: "Invalid project ID"
-  });
 
-  return;
-}
+  if (
+    !mongoose.isValidObjectId(parsed.data.client)
+  ) {
+    res.status(400).json({
+      success: false,
+      message: "Invalid client ID",
+    });
+
+    return;
+  }
 
   const client = await Client.findOne({
     _id: parsed.data.client,
-    user: req.userId
+    user: req.userId,
   });
 
   if (!client) {
     res.status(404).json({
       success: false,
-      message: "Client not found"
+      message: "Client not found",
     });
 
     return;
@@ -190,12 +221,12 @@ export async function updateProject(
   const project = await Project.findOneAndUpdate(
     {
       _id: req.params.id,
-      user: req.userId
+      user: req.userId,
     },
     parsed.data,
     {
       new: true,
-      runValidators: true
+      runValidators: true,
     }
   ).populate(
     "client",
@@ -205,7 +236,7 @@ export async function updateProject(
   if (!project) {
     res.status(404).json({
       success: false,
-      message: "Project not found"
+      message: "Project not found",
     });
 
     return;
@@ -213,7 +244,7 @@ export async function updateProject(
 
   res.json({
     success: true,
-    project
+    project,
   });
 }
 
@@ -222,23 +253,24 @@ export async function deleteProject(
   res: Response
 ): Promise<void> {
   if (!mongoose.isValidObjectId(req.params.id)) {
-  res.status(400).json({
-    success: false,
-    message: "Invalid project ID"
-  });
+    res.status(400).json({
+      success: false,
+      message: "Invalid project ID",
+    });
 
-  return;
-}
+    return;
+  }
+
   const project =
     await Project.findOneAndDelete({
       _id: req.params.id,
-      user: req.userId
+      user: req.userId,
     });
 
   if (!project) {
     res.status(404).json({
       success: false,
-      message: "Project not found"
+      message: "Project not found",
     });
 
     return;
@@ -246,6 +278,6 @@ export async function deleteProject(
 
   res.json({
     success: true,
-    message: "Project deleted successfully"
+    message: "Project deleted successfully",
   });
 }
